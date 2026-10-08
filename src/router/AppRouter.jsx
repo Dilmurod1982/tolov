@@ -8,6 +8,7 @@ import Profile from "../pages/Profile";
 
 import AdminDashboard from "../pages/admin/Dashboard";
 import Users from "../pages/admin/Users";
+import Stations from "../pages/admin/Stations";
 import OperatorDashboard from "../pages/operator/Dashboard";
 import AttendantDashboard from "../pages/attendant/Dashboard";
 import Accounting from "../pages/shared/Accounting";
@@ -37,6 +38,7 @@ export default function AppRouter() {
           element={<ProtectedRoute>{withLayout(<Profile />)}</ProtectedRoute>}
         />
 
+        {/* ---------- АДМИН ---------- */}
         <Route
           path="/admin"
           element={
@@ -54,6 +56,14 @@ export default function AppRouter() {
           }
         />
         <Route
+          path="/admin/stations"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              {withLayout(<Stations />)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/accounting"
           element={
             <ProtectedRoute roles={["admin"]}>
@@ -62,6 +72,7 @@ export default function AppRouter() {
           }
         />
 
+        {/* ---------- ОПЕРАТОР ---------- */}
         <Route
           path="/operator"
           element={
@@ -79,6 +90,7 @@ export default function AppRouter() {
           }
         />
 
+        {/* ---------- КОЛОНЩИК ---------- */}
         <Route
           path="/attendant"
           element={
@@ -88,6 +100,7 @@ export default function AppRouter() {
           }
         />
 
+        {/* ---------- ОБЩИЕ ---------- */}
         <Route
           path="/statistics"
           element={

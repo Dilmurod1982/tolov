@@ -50,6 +50,18 @@ export const uz = {
     loginButton: 'Kirish',
     loginError: 'Email yoki parol xato',
     email: 'Email',
+
+    // stations
+stationsTitle: 'Zapravkalar',
+addStation: 'Zapravka qo‘shish',
+stationName: 'Nomi',
+stationAddress: 'Manzil',
+stationColumns: 'Kolonkalar soni',
+noStations: 'Zapravkalar yo‘q',
+editStation: 'Tahrirlash',
+deleteStation: 'O‘chirish',
+confirmDeleteStation: 'Zapravkani o‘chirishni tasdiqlaysizmi?',
+createdAt: 'Yaratilgan',
   
     // roles
     roleAdmin: 'Administrator',
@@ -134,6 +146,7 @@ export const uz = {
     profileRole: 'Rol',
     profileStation: 'Stansiya',
     profileColumn: 'Kolonka',
+    acknowledged: 'Qabul qilindi',
   };
   
   export function t(key, vars) {

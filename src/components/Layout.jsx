@@ -34,6 +34,11 @@ export default function Layout({ children }) {
     { to: "/", label: t("home"), show: true },
     { to: "/admin/users", label: t("users"), show: profile?.role === "admin" },
     {
+      to: "/admin/stations",
+      label: t("stationsTitle"),
+      show: profile?.role === "admin",
+    },
+    {
       to: "/admin/accounting",
       label: t("accounting"),
       show: profile?.role === "admin",

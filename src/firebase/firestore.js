@@ -9,6 +9,7 @@ import {
     query,
     where,
     orderBy,
+    limit,
     onSnapshot,
     serverTimestamp,
     Timestamp,
@@ -70,6 +71,10 @@ import {
   
   export const paymentsCol = collection(db, 'payments');
   
+  /**
+   * Оплата, принятая колонщиком.
+   * Timestamp ставится сервером Firebase автоматически.
+   */
   export async function createPayment({
     stationId,
     columnId,
@@ -94,10 +99,17 @@ import {
       vehicleNumber: vehicleNumber.trim(),
       status,
       source: 'attendant',
+      acknowledged: false,
+      acknowledgedBy: null,
+      acknowledgedByName: null,
+      acknowledgedAt: null,
       createdAt: serverTimestamp(),
     });
   }
   
+  /**
+   * Оплата, принятая оператором/админом через кнопки колонок.
+   */
   export async function createOperatorPayment({
     stationId,
     columnId,
@@ -119,27 +131,51 @@ import {
       vehicleNumber: '',
       status: 'confirmed',
       source: 'operator',
+      acknowledged: false,
+      acknowledgedBy: null,
+      acknowledgedByName: null,
+      acknowledgedAt: null,
       createdAt: serverTimestamp(),
     });
   }
   
   /**
-   * ВАЖНО:
-   * Фильтр по дате берём "с запасом" — 30 дней назад.
-   * Это защищает от расхождения часов клиента и Firebase.
-   * Точный день фильтруется уже на клиенте (или в Statistics по выбору).
+   * Отметить оплату как «принято к сведению».
+   * Вызывается оператором или админом.
    */
-  const LOOKBACK_DAYS = 30;
+  export async function acknowledgePayment(paymentId, user) {
+    await updateDoc(doc(db, 'payments', paymentId), {
+      acknowledged: true,
+      acknowledgedBy: user.uid,
+      acknowledgedByName: user.fullName || user.email || '',
+      acknowledgedAt: serverTimestamp(),
+    });
+  }
   
+  /**
+   * Снять галочку «принято к сведению».
+   */
+  export async function unacknowledgePayment(paymentId) {
+    await updateDoc(doc(db, 'payments', paymentId), {
+      acknowledged: false,
+      acknowledgedBy: null,
+      acknowledgedByName: null,
+      acknowledgedAt: null,
+    });
+  }
+  
+  /**
+   * Realtime-подписка на последние оплаты станции.
+   * Без фильтра по createdAt — стабильно работает независимо от часов клиента.
+   * Локально отдаём только те, что попадают в диапазон (обычно — «сегодня»).
+   *
+   * attendantId — необязательный параметр для колонщика,
+   * чтобы правило Firestore могло валидировать выдачу на уровне запроса.
+   */
   export function subscribeTodayPayments(stationId, cb, attendantId = null) {
     if (!stationId) return () => {};
   
-    const start = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-  
-    const constraints = [
-      where('stationId', '==', stationId),
-      where('createdAt', '>=', Timestamp.fromDate(start)),
-    ];
+    const constraints = [where('stationId', '==', stationId)];
   
     if (attendantId) {
       constraints.push(where('attendantId', '==', attendantId));
@@ -148,20 +184,22 @@ import {
     const q = query(
       paymentsCol,
       ...constraints,
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(200)
     );
   
     return onSnapshot(
       q,
-      (snap) => {
-        cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      },
-      (err) => {
-        console.error('[subscribeTodayPayments] ERROR:', err.code, err.message);
-      }
+      (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (err) =>
+        console.error('[subscribeTodayPayments] ERROR:', err.code, err.message)
     );
   }
   
+  /**
+   * Realtime-подписка на оплаты в произвольном диапазоне.
+   * Используется страницей Statistika.
+   */
   export function subscribePaymentsRange(
     stationId,
     from,
@@ -195,6 +233,9 @@ import {
     );
   }
   
+  /**
+   * Разовый запрос оплат в диапазоне (для отчётов/экспорта).
+   */
   export async function getPaymentsRange(stationId, from, to) {
     const q = query(
       paymentsCol,
@@ -205,4 +246,8 @@ import {
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
+  export async function deleteStation(stationId) {
+    await deleteDoc(doc(db, 'stations', stationId));
   }
